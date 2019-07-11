@@ -31,7 +31,7 @@ class CLI
     puts "*** This is your list: ***".light_blue
     puts ""
     @user.tasks.each do |task_instance|
-      puts "- #{task_instance.name.capitalize}:".blue
+      puts "- #{task_instance.name}:".blue
 
       #   binding.pry
       if task_instance.complete
@@ -97,7 +97,7 @@ class CLI
     #@user = 0 agendas
 
     agenda = Agenda.create(user_id: @user.id, task_id: task.id)
-    # @user = User.find(@user.id)
+    @user = User.find(@user.id)
 
     view_list
     puts ""
