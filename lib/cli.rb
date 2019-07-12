@@ -26,6 +26,16 @@ class CLI
 
   #############################################################################################
 
+  def return_to_main
+    puts "Press any key to return to main menu"
+    input = gets.chomp
+    if input
+      menu
+    end
+  end
+
+  #############################################################################################
+
   def view_list
     puts ""
     puts "*** This is your list: ***".light_blue
@@ -42,6 +52,7 @@ class CLI
       end
       puts "--------------------".green
     end
+    return_to_main
   end
 
   ############################################################################################
@@ -61,6 +72,7 @@ class CLI
       menu_items.choice name: "Delete".red, value: 4
       menu_items.choice name: "Show me my completed list".red, value: 5
       menu_items.choice name: "Show me my incompleted list".red, value: 6
+      menu_items.choice name: "Exit".red, value: 7
       # option = gets.chomp
     end
     puts ""
@@ -73,11 +85,21 @@ class CLI
       add
     elsif option == 4
       delete_task
-      # puts "Please choose an option"
     elsif option == 5
       completed_list
     elsif option == 6
       incompleted_list
+    elsif option == 7
+      puts "
+           ★─▄█▀▀║░▄█▀▄║▄█▀▄║██▀▄║─★
+           ★─██║▀█║██║█║██║█║██║█║─★
+           ★─▀███▀║▀██▀║▀██▀║███▀║─★
+           ★───────────────────────★
+           ★───▐█▀▄─ ▀▄─▄▀ █▀▀──█───★
+           ★───▐█▀▀▄ ──█── █▀▀──▀───★
+           ★───▐█▄▄▀ ──▀── ▀▀▀──▄───★"
+      puts ""
+      abort
     end
   end
 
@@ -123,15 +145,29 @@ class CLI
     if response == "no"
       puts "Thank you!".blue
     else
-      puts "*** Please choose the task you want to update ***".yellow
+      puts "*** Please choose the task you want to update from your list. ***".yellow
       puts ""
-      view_list
+      puts "*** This is your list: ***".light_blue
+      puts ""
+      @user.tasks.each do |task_instance|
+        puts "- #{task_instance.name}:".blue
+
+        #   binding.pry
+        if task_instance.complete
+          checkmark = "\u2713"
+          puts "Completed " + checkmark.encode("utf-8")
+        else
+          puts "Not done"
+        end
+        puts "--------------------".green
+      end
 
       chosen_task = gets.chomp
       task_to_update = @user.tasks.where(name: chosen_task)[0]
 
       change_task(task_to_update)
     end
+    return_to_main
     puts ""
   end
 
@@ -139,13 +175,14 @@ class CLI
 
   def change_task(task_to_update)
     puts ""
-    puts "*** Do you want to rename the task or complete it? ***".light_blue
+    puts "*** Do you want to rename the task (type rename) or alter completion status (type alter)? ***".light_blue
     response = gets.chomp
-    if response == "rename".red
+    if response == "rename"
       puts "*** What would you like to rename it? ***".light_blue
       rename = gets.chomp
       task_to_update.update(name: rename)
-    elsif response == "complete"
+      puts "Thank you for renaming the task!".yellow
+    elsif response == "alter"
       puts ""
       puts "*** Are you sure the task is done? ***".light_blue
       response2 = gets.chomp
@@ -156,11 +193,15 @@ class CLI
       elsif response2 == "no"
         puts ""
         task_to_update.update(complete: false)
-        binding.pry
+
+        # binding.pry
       end
+      @user.reload
 
       puts "Thank you for updating!".yellow
+      menu
     end
+    @user.reload
 
     # Task.find_by(user_id: user.id).update(name: chosen_task)
   end
@@ -168,17 +209,27 @@ class CLI
   #########################################################################################
 
   def delete_task
+
+    ###
+
     puts ""
-    view_list
+    puts "*** This is your list: ***".light_blue
     puts ""
-    puts "*** Please choose the task you want to delete ***".light_blue
+
+    @user.tasks.each do |task_instance|
+      puts "- #{task_instance.name}".blue
+    end
+
     puts ""
+    puts "*** Please choose the task you want to delete from your list. ***".yellow
+    ###
+
     delete_this = gets.chomp
     puts ""
     puts "*** Are you sure you want to delete this task? ***".light_blue
     task_to_delete = gets.chomp
     puts ""
-    if task_to_delete == "yes"
+    if task_to_delete == "yes" || task_to_delete == "y" || task_to_delete == "Yes" || task_to_delete == "Y"
       # binding.pry
       task_to_delete_id = Task.find_by(name: delete_this).id
       # binding.pry
@@ -188,7 +239,7 @@ class CLI
       # binding.pry
       Agenda.find_by(user_id: @user.id, task_id: task_to_delete_id).destroy
 
-      puts "Task deleted".yellow
+      puts "Task deleted. Returning to main menu".yellow
     else
       menu
     end
@@ -202,17 +253,21 @@ class CLI
     completed_tasks = @user.tasks.select do |task|
       task.complete == true
     end
+
     completed_tasks.each do |task|
       puts "- #{task.name}:".blue
-      checkmark = "\u2713"
+      # checkmark = "\u2713"
     end
-    if completed_tasks == true
+
+    if completed_tasks.length >= 1
+      checkmark = "\u2713"
       puts "Completed" + checkmark.encode("utf-8")
       puts "----------------".green
-    else
+    else #length is not 1 nor greater than 1 (aka length = 0)
       puts "You don't have completed tasks".light_blue
       puts ""
     end
+    return_to_main
   end
 
   def incompleted_list
@@ -224,7 +279,7 @@ class CLI
       # puts task.name.blue
       puts "- #{task.name.capitalize}:".blue
     end
-    if incompleted_tasks == false
+    if incompleted_tasks.length >= 1
       puts "Not done"
       puts "----------------".green
       puts ""
@@ -232,5 +287,14 @@ class CLI
       puts "You don't have incompleted tasks".light_blue
       puts ""
     end
-  end
-end
+
+    return_to_main
+    #
+  end #end of incompleted_list
+end #end of everything CLI
+
+#Stretch goal unable to complete, what happens when user types in task name wrong in update menu
+#If I had more time I would have referenced an array of task names for that user,
+#compared the input = gets.chomp to the names in that array
+#if task_array.include?(input) then update task,
+#if input not included in task_array, print error message and go back to update menu
